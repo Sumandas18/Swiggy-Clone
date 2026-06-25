@@ -2,13 +2,75 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { ShoppingCart, Bell, User as UserIcon, LogOut } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import useCartStore from "../store/cartStore";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import api from "../lib/api";
 
 export const MainLayout = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
   const { items } = useCartStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const previousOrdersRef = useRef({});
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== "user") return;
+
+    // Load existing notifications from localStorage if any
+    const saved = localStorage.getItem('swiggy_notifications');
+    if (saved) {
+      try { setNotifications(JSON.parse(saved)); } catch(e){}
+    }
+
+    const checkOrders = async () => {
+      try {
+        const res = await api.get("/order");
+        const orders = res.data.data;
+        
+        const newNotifications = [];
+        const currentOrdersMap = {};
+
+        orders.forEach(order => {
+          currentOrdersMap[order._id] = order.status;
+          const prevStatus = previousOrdersRef.current[order._id];
+          
+          if (prevStatus && prevStatus !== order.status) {
+            newNotifications.push({
+              id: Date.now() + Math.random(),
+              orderId: order._id,
+              restaurantName: order.restaurantId?.name || "Restaurant",
+              status: order.status,
+              time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            });
+          }
+        });
+
+        if (newNotifications.length > 0) {
+          setNotifications(prev => {
+             const updated = [...newNotifications, ...prev].slice(0, 20); // keep last 20
+             localStorage.setItem('swiggy_notifications', JSON.stringify(updated));
+             return updated;
+          });
+          setUnreadCount(prev => prev + newNotifications.length);
+        }
+
+        previousOrdersRef.current = currentOrdersMap;
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    api.get("/order").then(res => {
+       const map = {};
+       res.data.data.forEach(o => map[o._id] = o.status);
+       previousOrdersRef.current = map;
+    }).catch(console.error);
+
+    const interval = setInterval(checkOrders, 5000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, user]);
 
   const handleAccountClick = () => {
     if (!isAuthenticated) {
@@ -73,12 +135,54 @@ export const MainLayout = () => {
                 </span>
               )}
             </button>
-            <button className="text-gray-600 hover:text-primary transition-colors">
-              <Bell size={18} />
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (!showNotifications) setUnreadCount(0);
+                  setShowUserMenu(false);
+                }}
+                className="text-gray-600 hover:text-primary transition-colors relative"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && isAuthenticated && (
+                <div className="absolute right-0 mt-4 w-80 bg-white border border-gray-100 rounded-xl shadow-2xl py-2 z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h3 className="font-bold text-gray-900">Notifications</h3>
+                    <button onClick={() => { setNotifications([]); localStorage.removeItem('swiggy_notifications'); }} className="text-xs text-gray-500 hover:text-primary font-medium">Clear All</button>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                        No new notifications
+                      </div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div key={notif.id} className="px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                          <p className="text-sm text-gray-800">
+                            Your order from <span className="font-bold">{notif.restaurantName}</span> is now <span className="font-bold text-primary">{notif.status}</span>.
+                          </p>
+                          <span className="text-xs text-gray-400 mt-1 block">{notif.time}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="relative">
               <button
-                onClick={handleAccountClick}
+                onClick={() => {
+                  handleAccountClick();
+                  setShowNotifications(false);
+                }}
                 className="h-8 w-8 rounded-full bg-gray-200 overflow-hidden border border-gray-300 hover:bg-gray-300 transition-colors flex items-center justify-center"
               >
                 <UserIcon size={18} className="text-gray-500" />

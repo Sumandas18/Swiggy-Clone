@@ -129,6 +129,7 @@ class OrderController {
 
       const validStatuses = [
         "Pending",
+        "Accepted",
         "Preparing",
         "Out for delivery",
         "Delivered",

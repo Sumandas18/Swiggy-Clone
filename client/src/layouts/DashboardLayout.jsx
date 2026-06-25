@@ -20,7 +20,7 @@ export const DashboardLayout = () => {
 
   const adminLinks = [
     { name: "Orders", icon: LayoutDashboard, path: "/admin/orders" },
-    { name: "Analytics", icon: TrendingUp, path: "/admin/analytics" },
+    { name: "Dashboard", icon: TrendingUp, path: "/admin/dashboard" },
     { name: "Restaurants", icon: Package, path: "/admin/restaurants" },
     { name: "Users", icon: Users, path: "/admin/users" },
     { name: "Categories", icon: Grid, path: "/admin/categories" },

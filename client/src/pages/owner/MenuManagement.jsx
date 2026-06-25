@@ -114,9 +114,31 @@ export const MenuManagement = () => {
     <div className="p-8 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Menu Management</h2>
-          <p className="text-gray-500 mt-1">Manage food items across your restaurants</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Menu Management</h2>
+          <p className="text-gray-500">Manage food items for your restaurant</p>
         </div>
+        
+        {restaurants.length > 1 ? (
+          <div className="flex items-center space-x-3 bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+            <label className="font-bold text-gray-700 text-sm px-2">Select Restaurant:</label>
+            <select 
+              value={selectedRestaurantId} 
+              onChange={(e) => setSelectedRestaurantId(e.target.value)}
+              className="border border-gray-200 rounded-lg p-2 bg-gray-50 text-sm font-medium focus:ring-primary focus:border-primary outline-none"
+            >
+              {restaurants.map(rest => (
+                <option key={rest._id} value={rest._id}>{rest.name}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          restaurants.length === 1 && (
+            <div className="text-lg font-bold text-gray-800">
+              {restaurants[0].name}
+            </div>
+          )
+        )}
+        
         <button
           onClick={() => setShowModal(true)}
           className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-colors flex items-center"
@@ -125,26 +147,16 @@ export const MenuManagement = () => {
         </button>
       </div>
 
-      {restaurants.length > 1 && (
-        <div className="mb-6">
-          <label className="text-sm font-bold text-gray-700 mr-3">Select Restaurant:</label>
-          <select
-            value={selectedRestaurantId}
-            onChange={(e) => setSelectedRestaurantId(e.target.value)}
-            className="border border-gray-200 rounded-lg p-2.5 text-sm font-medium focus:ring-primary focus:border-primary"
-          >
-            {restaurants.map((r) => (
-              <option key={r._id} value={r._id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {restaurants.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <p className="text-gray-500">You don't have any restaurants yet.</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">No Restaurant Found</h3>
+          <p className="text-gray-500 mb-6">You need to set up your restaurant profile first before managing your menu.</p>
+          <button 
+            onClick={() => window.location.href = '/owner'} 
+            className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-6 rounded-lg shadow-sm transition-colors"
+          >
+            Go to Dashboard to Create Restaurant
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

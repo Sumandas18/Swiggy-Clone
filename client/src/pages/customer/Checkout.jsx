@@ -7,7 +7,7 @@ import { Trash2, Plus, Minus } from "lucide-react";
 
 export const Checkout = () => {
   const navigate = useNavigate();
-  const { items, restaurantId, getTotalPrice, clearCart, removeItem, addItem } =
+  const { items, getTotalPrice, clearCart, removeItem, addItem } =
     useCartStore();
   const { user } = useAuthStore();
 
@@ -33,18 +33,26 @@ export const Checkout = () => {
 
     setLoading(true);
     try {
-      const orderItems = items.map((item) => ({
-        foodItemId: item._id,
-        quantity: item.quantity,
-        price: item.price,
-      }));
+      const groupedItems = items.reduce((acc, item) => {
+        if (!acc[item.restaurantId]) acc[item.restaurantId] = [];
+        acc[item.restaurantId].push({
+          foodItemId: item._id,
+          quantity: item.quantity,
+          price: item.price,
+        });
+        return acc;
+      }, {});
 
-      await api.post("/order", {
-        restaurantId,
-        items: orderItems,
-        totalAmount,
-        deliveryAddress: address,
-      });
+      for (const restId in groupedItems) {
+        const restItems = groupedItems[restId];
+        const restTotal = restItems.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+        await api.post("/order", {
+          restaurantId: restId,
+          items: restItems,
+          totalAmount: restTotal,
+          deliveryAddress: address,
+        });
+      }
 
       alert("Order placed successfully!");
       clearCart();
@@ -160,7 +168,7 @@ export const Checkout = () => {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => addItem(item, restaurantId)}
+                        onClick={() => addItem(item, item.restaurantId)}
                         className="p-1.5 hover:bg-gray-50 text-green-600 transition-colors rounded-r-lg"
                         title="Increase quantity"
                       >
@@ -179,14 +187,14 @@ export const Checkout = () => {
               <span>₹{totalAmount}</span>
             </div>
             <div className="flex justify-between">
-              <span>Delivery Fee</span>
-              <span>₹40</span>
+              <span>Delivery Fee ({Object.keys(items.reduce((acc, i) => ({...acc, [i.restaurantId]: true}), {})).length} restaurant{Object.keys(items.reduce((acc, i) => ({...acc, [i.restaurantId]: true}), {})).length > 1 ? 's' : ''})</span>
+              <span>₹{Object.keys(items.reduce((acc, i) => ({...acc, [i.restaurantId]: true}), {})).length * 40}</span>
             </div>
           </div>
 
           <div className="border-t mt-4 pt-4 flex justify-between font-bold text-lg">
             <span>TO PAY</span>
-            <span>₹{totalAmount + 40}</span>
+            <span>₹{totalAmount + (Object.keys(items.reduce((acc, i) => ({...acc, [i.restaurantId]: true}), {})).length * 40)}</span>
           </div>
         </div>
       </div>

@@ -14,7 +14,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: "*",
+    origin: function (origin, callback) {
+      // Allow all origins in dev, or specific origins in production
+      const allowedOrigins = [
+        "http://localhost:5173", 
+        "http://localhost:4000",
+        process.env.FRONTEND_URL
+      ];
+      // If no origin (e.g. mobile apps, postman) or origin is in allowed list
+      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        // Fallback for Vercel generated domains (optional, you can just use callback(null, true) to allow all)
+        callback(null, true); 
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   })

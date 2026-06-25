@@ -13,25 +13,25 @@ import { OrderManagement } from "./pages/owner/OrderManagement";
 import { MenuManagement } from "./pages/owner/MenuManagement";
 import { Analytics } from "./pages/admin/Analytics";
 import { AdminOrders } from "./pages/admin/Orders";
+import { AdminRestaurants } from "./pages/admin/Restaurants";
+import { AdminUsers } from "./pages/admin/Users";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Auth Routes */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Route>
 
-        {/* Customer Routes (Public/Protected mixed) */}
         <Route element={<MainLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/restaurant/:id" element={<RestaurantDetails />} />
           <Route path="/checkout" element={<Checkout />} />
         </Route>
 
-        {/* Owner Routes */}
         <Route element={<ProtectedRoute allowedRoles={["owner"]} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/owner" element={<OrderManagement />} />
@@ -41,7 +41,6 @@ function App() {
           </Route>
         </Route>
 
-        {/* Admin Routes */}
         <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
           <Route element={<DashboardLayout />}>
             <Route
@@ -49,14 +48,13 @@ function App() {
               element={<Navigate to="/admin/orders" replace />}
             />
             <Route path="/admin/orders" element={<AdminOrders />} />
-            <Route path="/admin/analytics" element={<Analytics />} />
-            <Route path="/admin/restaurants" element={<Analytics />} />
-            <Route path="/admin/users" element={<Analytics />} />
-            <Route path="/admin/categories" element={<Analytics />} />
+            <Route path="/admin/dashboard" element={<ErrorBoundary><Analytics /></ErrorBoundary>} />
+            <Route path="/admin/restaurants" element={<ErrorBoundary><AdminRestaurants /></ErrorBoundary>} />
+            <Route path="/admin/users" element={<ErrorBoundary><AdminUsers /></ErrorBoundary>} />
+            <Route path="/admin/categories" element={<div className="p-8">Categories Management (Coming Soon)</div>} />
           </Route>
         </Route>
 
-        {/* Fallback - redirect unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
